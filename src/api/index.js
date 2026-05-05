@@ -91,6 +91,12 @@ export const analyticsAPI = {
   paymentBreakdown: (period) => api.get('/analytics/payment-breakdown/', { params: { period } }),
   smartReorder: (days=7) => api.get('/analytics/smart-reorder/', { params: { days } }),
   aiInsights: (data) => api.post('/analytics/ai-insights/', data),
+  salesForecast:    (days=7)        => api.get('/analytics/sales-forecast/', { params: { days } }),
+productDemand:    (id, days=14)   => api.get('/analytics/product-demand/', { params: { product_id: id, days } }),
+rfmScores:        ()              => api.get('/analytics/rfm-scores/'),
+productAffinity:  ()              => api.get('/analytics/product-affinity/'),
+anomalyDetection: ()              => api.get('/analytics/anomaly-detection/'),
+mlInsights:       (data)          => api.post('/analytics/ml-insights/', data),
 }
 
 // ── Expenses ──────────────────────────────────────────
