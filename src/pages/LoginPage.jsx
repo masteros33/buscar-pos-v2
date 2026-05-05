@@ -1,8 +1,12 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { User, Lock, Eye, EyeOff, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function LoginPage() {
+  const { login } = useAuth()
+  const navigate = useNavigate()
   const [form, setForm] = useState({ username: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
@@ -11,9 +15,15 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise(r => setTimeout(r, 800))
-    toast.success('Login works! Backend next.')
-    setLoading(false)
+    try {
+      const user = await login(form)
+      toast.success(`Welcome back, ${user.first_name || user.username}!`)
+      navigate('/pos')
+    } catch {
+      toast.error('Invalid username or password')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -71,7 +81,10 @@ export default function LoginPage() {
               fontSize: '26px', fontWeight: '800', color: '#fff',
               boxShadow: 'var(--shadow-glow)',
             }}>B</div>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: '6px' }}>
+            <div style={{
+              fontSize: '24px', fontWeight: '700',
+              color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: '6px',
+            }}>
               BUSCAR POS
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text2)' }}>
@@ -81,11 +94,15 @@ export default function LoginPage() {
 
           {/* Form */}
           <div style={{ padding: '30px 36px 36px' }}>
-            <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '24px' }}>
+            <div style={{
+              fontSize: '15px', fontWeight: '600',
+              color: 'var(--text)', marginBottom: '24px',
+            }}>
               Sign in to your account
             </div>
 
             <form onSubmit={handleSubmit}>
+
               {/* Username */}
               <div style={{ marginBottom: '18px' }}>
                 <label style={{
@@ -108,6 +125,7 @@ export default function LoginPage() {
                     onBlur={() => setFocused(null)}
                     placeholder="Enter username"
                     required
+                    autoComplete="username"
                     style={{
                       width: '100%',
                       padding: '12px 14px 12px 38px',
@@ -147,6 +165,7 @@ export default function LoginPage() {
                     onBlur={() => setFocused(null)}
                     placeholder="Enter password"
                     required
+                    autoComplete="current-password"
                     style={{
                       width: '100%',
                       padding: '12px 40px 12px 38px',
@@ -161,45 +180,56 @@ export default function LoginPage() {
                       boxShadow: focused === 'p' ? '0 0 0 3px var(--g-glow)' : 'none',
                     }}
                   />
-                  <button type="button" onClick={() => setShowPass(s => !s)} style={{
-                    position: 'absolute', right: '12px', top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--text3)', display: 'flex', alignItems: 'center', padding: 0,
-                  }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(s => !s)}
+                    style={{
+                      position: 'absolute', right: '12px', top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none', border: 'none',
+                      cursor: 'pointer', color: 'var(--text3)',
+                      display: 'flex', alignItems: 'center', padding: 0,
+                    }}
+                  >
                     {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
               </div>
 
               {/* Button */}
-              <button type="submit" disabled={loading} style={{
-                width: '100%', padding: '13px',
-                borderRadius: '10px', border: 'none',
-                background: 'linear-gradient(135deg, var(--g), var(--g3))',
-                color: '#fff', fontWeight: '700', fontSize: '15px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontFamily: 'inherit',
-                boxShadow: 'var(--shadow-glow)',
-                opacity: loading ? 0.8 : 1,
-                display: 'flex', alignItems: 'center',
-                justifyContent: 'center', gap: '8px',
-                transition: 'all 0.2s',
-              }}>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  width: '100%', padding: '13px',
+                  borderRadius: '10px', border: 'none',
+                  background: 'linear-gradient(135deg, var(--g), var(--g3))',
+                  color: '#fff', fontWeight: '700', fontSize: '15px',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontFamily: 'inherit',
+                  boxShadow: loading ? 'none' : 'var(--shadow-glow)',
+                  opacity: loading ? 0.8 : 1,
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', gap: '8px',
+                  transition: 'all 0.2s',
+                }}
+              >
                 {loading ? 'Signing in...' : <><Zap size={16} />Sign in</>}
               </button>
             </form>
 
             {/* Demo hint */}
-            <div style={{
-              marginTop: '20px', padding: '11px 14px',
-              background: 'var(--g-soft)',
-              border: '1px solid var(--border2)',
-              borderRadius: '8px', fontSize: '12px',
-              color: 'var(--g)', textAlign: 'center',
-            }}>
-              Demo: <strong>demo</strong> / <strong>demo123</strong>
-            </div>
+            {import.meta.env.DEV && (
+              <div style={{
+                marginTop: '20px', padding: '11px 14px',
+                background: 'var(--g-soft)',
+                border: '1px solid var(--border2)',
+                borderRadius: '8px', fontSize: '12px',
+                color: 'var(--g)', textAlign: 'center',
+              }}>
+                Demo: <strong>demo</strong> / <strong>demo123</strong>
+              </div>
+            )}
 
             <div style={{
               display: 'flex', alignItems: 'center',
