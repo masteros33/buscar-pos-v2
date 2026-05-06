@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, ScanLine, Trash2, CreditCard, Banknote, Smartphone, X, User, CheckCircle } from 'lucide-react'
+import { Search, ScanLine, Trash2, CreditCard, Banknote, Smartphone, X, User } from 'lucide-react'
 import { productsAPI, salesAPI, customersAPI } from '../api'
 import { useOffline } from '../context/OfflineContext'
 import Receipt from '../components/Receipt'
+import ShiftBar from '../components/ShiftBar'
 import Fuse from 'fuse.js'
 import toast from 'react-hot-toast'
 
@@ -152,7 +153,6 @@ export default function POSPage() {
     }
   }
 
-  // Fuzzy search
   const filtered = (() => {
     let base = category === 'All'
       ? products
@@ -239,6 +239,9 @@ export default function POSPage() {
 
       {/* LEFT */}
       <div style={S.left}>
+
+        {/* Shift bar */}
+        <ShiftBar />
 
         {/* Search + Scan */}
         <div style={S.searchRow}>
@@ -337,7 +340,6 @@ export default function POSPage() {
 
       {/* RIGHT: Cart */}
       <div style={S.cart}>
-        {/* Cart header */}
         <div style={{ padding: '12px 14px 10px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
@@ -352,7 +354,6 @@ export default function POSPage() {
             )}
           </div>
 
-          {/* Customer search */}
           <div style={{ marginTop: 8, position: 'relative' }}>
             {customer ? (
               <div style={{
@@ -362,17 +363,10 @@ export default function POSPage() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <User size={12} style={{ color: 'var(--g)' }} />
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--g)' }}>
-                    {customer.name}
-                  </span>
-                  <span style={{ fontSize: 11, color: 'var(--g2)' }}>
-                    · {customer.points_balance} pts
-                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--g)' }}>{customer.name}</span>
+                  <span style={{ fontSize: 11, color: 'var(--g2)' }}>· {customer.points_balance} pts</span>
                 </div>
-                <button onClick={() => setCustomer(null)} style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--g)', display: 'flex', alignItems: 'center',
-                }}>
+                <button onClick={() => setCustomer(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--g)', display: 'flex' }}>
                   <X size={12} />
                 </button>
               </div>
@@ -380,8 +374,7 @@ export default function POSPage() {
               <div style={{ position: 'relative' }}>
                 <User size={13} style={{
                   position: 'absolute', left: 9, top: '50%',
-                  transform: 'translateY(-50%)', color: 'var(--text3)',
-                  pointerEvents: 'none',
+                  transform: 'translateY(-50%)', color: 'var(--text3)', pointerEvents: 'none',
                 }} />
                 <input
                   value={customerSearch}
@@ -424,7 +417,6 @@ export default function POSPage() {
           </div>
         </div>
 
-        {/* Cart items */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }}>
           {cart.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text3)', fontSize: 13 }}>
@@ -437,10 +429,9 @@ export default function POSPage() {
               padding: '8px 4px', borderBottom: '1px solid var(--border)',
             }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  fontSize: 12, fontWeight: 500, color: 'var(--text)',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>{item.name}</div>
+                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {item.name}
+                </div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>
                   GHS {parseFloat(item.price).toFixed(2)} each
                 </div>
@@ -462,7 +453,6 @@ export default function POSPage() {
           ))}
         </div>
 
-        {/* Cart footer */}
         <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text2)', marginBottom: 3 }}>
             <span>Subtotal</span><span style={{ fontFamily: 'DM Mono, monospace' }}>GHS {subtotal.toFixed(2)}</span>
@@ -475,7 +465,6 @@ export default function POSPage() {
             <span style={{ color: 'var(--g)', fontFamily: 'DM Mono, monospace' }}>GHS {total.toFixed(2)}</span>
           </div>
 
-          {/* Payment methods */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
             {payMethods.map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setPaymentMethod(id)} style={{
@@ -492,7 +481,6 @@ export default function POSPage() {
             ))}
           </div>
 
-          {/* Charge button */}
           <button
             onClick={handleCheckout}
             disabled={submitting || !cart.length}
