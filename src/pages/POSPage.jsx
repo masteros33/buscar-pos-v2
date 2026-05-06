@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { Search, ScanLine, Trash2, CreditCard, Banknote, Smartphone, X, User, CheckCircle } from 'lucide-react'
 import { productsAPI, salesAPI, customersAPI } from '../api'
 import { useOffline } from '../context/OfflineContext'
-import toast from 'react-hot-toast'
+import Receipt from '../components/Receipt'
 import Fuse from 'fuse.js'
+import toast from 'react-hot-toast'
 
 export default function POSPage() {
   const [products, setProducts] = useState([])
@@ -17,7 +18,8 @@ export default function POSPage() {
   const [customerSearch, setCustomerSearch] = useState('')
   const [customerResults, setCustomerResults] = useState([])
   const [showCustomerDrop, setShowCustomerDrop] = useState(false)
-  const [lastReceipt, setLastReceipt] = useState(null)
+  const [showReceipt, setShowReceipt] = useState(false)
+  const [currentSale, setCurrentSale] = useState(null)
   const [scanning, setScanning] = useState(false)
   const scannerRef = useRef(null)
   const scannerInstanceRef = useRef(null)
@@ -103,7 +105,7 @@ export default function POSPage() {
   }
 
   const removeItem = (id) => setCart(prev => prev.filter(i => i.id !== id))
-  const clearCart = () => { setCart([]); setCustomer(null); setLastReceipt(null) }
+  const clearCart = () => { setCart([]); setCustomer(null); setCurrentSale(null) }
 
   const subtotal = cart.reduce((s, i) => s + parseFloat(i.price) * i.qty, 0)
   const tax = subtotal * 0.025
@@ -129,8 +131,8 @@ export default function POSPage() {
     try {
       if (isOnline) {
         const { data } = await salesAPI.create(payload)
-        setLastReceipt(data)
-        toast.success(`Sale ${data.receipt_number} complete!`)
+        setCurrentSale(data)
+        setShowReceipt(true)
         setCart([])
         setCustomer(null)
       } else {
@@ -149,23 +151,18 @@ export default function POSPage() {
       setSubmitting(false)
     }
   }
-  const fuse = new Fuse(products, {
-  keys: ['name', 'sku', 'barcode', 'category_name'],
-  threshold: 0.35,
-  includeScore: true,
-})
 
-const filtered = (() => {
-  let base = category === 'All'
-    ? products
-    : products.filter(p => p.category_name === category)
-  if (!search.trim()) return base
-  const fuseResults = new Fuse(base, {
-    keys: ['name', 'sku', 'barcode'],
-    threshold: 0.35,
-  }).search(search)
-  return fuseResults.map(r => r.item)
-})()
+  // Fuzzy search
+  const filtered = (() => {
+    let base = category === 'All'
+      ? products
+      : products.filter(p => p.category_name === category)
+    if (!search.trim()) return base
+    return new Fuse(base, {
+      keys: ['name', 'sku', 'barcode'],
+      threshold: 0.35,
+    }).search(search).map(r => r.item)
+  })()
 
   const payMethods = [
     { id: 'cash', label: 'Cash',  icon: Banknote   },
@@ -254,7 +251,7 @@ const filtered = (() => {
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search products or scan barcode..."
+              placeholder="Search products — typos ok..."
               style={S.searchInput}
               onFocus={e => e.target.style.borderColor = 'var(--g2)'}
               onBlur={e => e.target.style.borderColor = 'var(--border)'}
@@ -302,7 +299,7 @@ const filtered = (() => {
           ))}
         </div>
 
-        {/* Products */}
+        {/* Products grid */}
         <div style={S.productGrid}>
           {filtered.map(p => (
             <button
@@ -340,7 +337,7 @@ const filtered = (() => {
 
       {/* RIGHT: Cart */}
       <div style={S.cart}>
-        {/* Header */}
+        {/* Cart header */}
         <div style={{ padding: '12px 14px 10px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
@@ -355,7 +352,7 @@ const filtered = (() => {
             )}
           </div>
 
-          {/* Customer */}
+          {/* Customer search */}
           <div style={{ marginTop: 8, position: 'relative' }}>
             {customer ? (
               <div style={{
@@ -375,7 +372,9 @@ const filtered = (() => {
                 <button onClick={() => setCustomer(null)} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   color: 'var(--g)', display: 'flex', alignItems: 'center',
-                }}><X size={12} /></button>
+                }}>
+                  <X size={12} />
+                </button>
               </div>
             ) : (
               <div style={{ position: 'relative' }}>
@@ -425,7 +424,7 @@ const filtered = (() => {
           </div>
         </div>
 
-        {/* Items */}
+        {/* Cart items */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }}>
           {cart.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text3)', fontSize: 13 }}>
@@ -463,7 +462,7 @@ const filtered = (() => {
           ))}
         </div>
 
-        {/* Footer */}
+        {/* Cart footer */}
         <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text2)', marginBottom: 3 }}>
             <span>Subtotal</span><span style={{ fontFamily: 'DM Mono, monospace' }}>GHS {subtotal.toFixed(2)}</span>
@@ -476,7 +475,7 @@ const filtered = (() => {
             <span style={{ color: 'var(--g)', fontFamily: 'DM Mono, monospace' }}>GHS {total.toFixed(2)}</span>
           </div>
 
-          {/* Payment */}
+          {/* Payment methods */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
             {payMethods.map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setPaymentMethod(id)} style={{
@@ -493,25 +492,7 @@ const filtered = (() => {
             ))}
           </div>
 
-          {/* Last receipt */}
-          {lastReceipt && (
-            <div style={{
-              background: 'var(--g-soft)', border: '1px solid var(--border2)',
-              borderRadius: 8, padding: '8px 10px', marginBottom: 10,
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}>
-              <CheckCircle size={14} style={{ color: 'var(--g)', flexShrink: 0 }} />
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--g)' }}>
-                  {lastReceipt.receipt_number}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--g2)' }}>
-                  GHS {parseFloat(lastReceipt.total).toFixed(2)} · {lastReceipt.payment_method}
-                </div>
-              </div>
-            </div>
-          )}
-
+          {/* Charge button */}
           <button
             onClick={handleCheckout}
             disabled={submitting || !cart.length}
@@ -530,6 +511,19 @@ const filtered = (() => {
           </button>
         </div>
       </div>
+
+      {/* Receipt modal */}
+      {showReceipt && currentSale && (
+        <Receipt
+          sale={currentSale}
+          store={{
+            name: 'BUSCAR POS',
+            address: 'Accra, Ghana',
+            receipt_footer: 'Thank you for shopping with us!',
+          }}
+          onClose={() => { setShowReceipt(false); setCurrentSale(null) }}
+        />
+      )}
     </div>
   )
 }
